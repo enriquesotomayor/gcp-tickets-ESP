@@ -4,12 +4,12 @@ from google.cloud import bigquery
 from google.cloud import storage
 
 # --- CONFIGURACIÓN: RELLENA TUS DATOS AQUÍ ---
-PROJECT_ID = "proyectos-test-ai"  # Tu Project ID (ej: bold-rampart-...)
-LOCATION = "eu"                   # Región de tu procesador (ej: "eu" o "us")
-PROCESSOR_ID = "xxxxxxxxxxxxx"    # El ID de tu procesador de Document AI
-BQ_DATASET = "analisis_tickets"
-BQ_TABLE_RECIBOS = "recibos_restaurantes"
-BQ_TABLE_LINE_ITEMS = "line_items_recibos"
+PROJECT_ID = "bold-rampart-464317-q7"      # Tu Project ID (ej: bold-rampart-...)
+LOCATION = "eu"                           # Región de tu procesador (ej: "eu" o "us")
+PROCESSOR_ID = "285b1d87177fbb37"            # El ID de tu procesador de Document AI
+BQ_DATASET = "Data_Tickets_Restaurantes"
+BQ_TABLE_RECIBOS = "Tabla_Tickets_Restaurantes_ESP"
+BQ_TABLE_LINE_ITEMS = "line_items_Tickets"
 # -------------------------------------------------
 
 docai_client = documentai.DocumentProcessorServiceClient()
@@ -34,7 +34,7 @@ def procesar_ticket(cloud_event):
     # Configuración para procesar el documento online
     request = documentai.ProcessRequest(
         name=resource_name,
-        gcs_document=documentai.GcsDocument(gcs_uri=gcs_uri, mime_type="application/pdf"), # Cambia mime_type si usas imagenes (ej: "image/jpeg")
+        gcs_document=documentai.GcsDocument(gcs_uri=gcs_uri, mime_type="image/jpeg"), # Cambia mime_type si usas imagenes (ej: "image/jpeg")
     )
 
     # 2. Llamar a la API de Document AI
@@ -92,4 +92,4 @@ def procesar_ticket(cloud_event):
         if errors:
             print(f"Errores al insertar en tabla de line items: {errors}")
         else:
-            print(f"{len(filas_line_items)} filas insertadas correctamente en la tabla de line items.")
+            print(f"{len(filas_line_items)} Filas insertadas correctamente en la tabla de line items.")
