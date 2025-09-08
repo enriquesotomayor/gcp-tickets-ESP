@@ -21,31 +21,26 @@ bq_client = bigquery.Client()
 @app.route("/", methods=["POST"])
 def procesar_ticket():
     event = request.get_json()
-    print("--- INICIO DEL PROCESO ---")
     print("Evento recibido:", event)
 
-    data = event.get("data", {})
-    bucket_name = data.get("bucket")
-    file_name = data.get("name")
+    # --- LÍNEAS CORREGIDAS ---
+    # Leemos directamente del objeto 'event', no de un sub-apartado 'data'
+    bucket_name = event.get("bucket")
+    file_name = event.get("name")
+    # -------------------------
 
-    # --- NUEVAS LÍNEAS DE DEPURACIÓN ---
-    print("--- VALORES EXTRAÍDOS ---")
     print(f"Valor de bucket_name: {bucket_name}")
-    print(f"Tipo de bucket_name: {type(bucket_name)}")
     print(f"Valor de file_name: {file_name}")
-    print(f"Tipo de file_name: {type(file_name)}")
-    # ------------------------------------
 
     if not bucket_name or not file_name:
         print("ERROR: La condición de validación ha fallado. El bucket o el nombre del archivo están vacíos o son None.")
         return "Error en el formato del evento", 400
 
-    # --- El resto del código es el mismo ---
     gcs_uri = f"gs://{bucket_name}/{file_name}"
     resource_name = docai_client.processor_path(PROJECT_ID, LOCATION, PROCESSOR_ID)
     request_docai = documentai.ProcessRequest(
         name=resource_name,
-        gcs_document=documentai.GcsDocument(gcs_uri=gcs_uri, mime_type="application/pdf"),
+        gcs_document=documentai.GcsDocument(gcs_uri=gcs_uri, mime_type="application/pdf"), # Cambia a "image/jpeg" o "image/png" si subes imágenes
     )
     result = docai_client.process_document(request=request_docai)
     document = result.document
@@ -54,20 +49,43 @@ def procesar_ticket():
     fila_recibo = {"documento_fuente": file_name}
     filas_line_items = []
     
-    # ... (Aquí va tu lógica de mapeo de entidades como antes) ...
-    # Ejemplo:
+    # --- AQUÍ VA TU LÓGICA DE MAPEO DE ENTIDADES ---
+    # Este es solo un ejemplo, complétalo con todos tus campos
     for entity in document.entities:
-      if entity.type_ == "Empresa_NIF":
-        fila_recibo['empresa_nif'] = entity.mention_text
+        if entity.type_ == "Empresa_NIF":
+            fila_recibo['empresa_nif'] = entity.mention_text
+        elif entity.type_ == "Total":
+            try:
+                total_text = entity.mention_text.replace('€', '').replace(',', '.').strip()
+                fila_recibo['total_recibo'] = float(total_text)
+            except (ValueError, TypeError):
+                print(f"No se pudo convertir el total '{entity.mention_text}' a número.")
+        # ...Añade aquí el resto de tus mapeos para la tabla principal...
+        
+        elif entity.type_ == "Line_Item":
+            line_item_row = {"recibo_fuente": file_name}
+            for prop in entity.properties:
+                if prop.type_ == "Line_Item-Concepto":
+                    line_item_row["line_item_concepto"] = prop.mention_text
+                # ...Añade el resto de campos de line_item...
+            filas_line_items.append(line_item_row)
+    # ------------------------------------------------
 
-    if fila_recibo:
-        errors = bq_client.insert_rows_json(f"{PROJECT_ID}.{BQ_DATASET}.{BQ_TABLE_RECIBOS}", [fila_recibo])
+    if len(fila_recibo) > 1: # Solo insertar si hemos extraído algún dato además del nombre del archivo
+        table_recibos_ref = bq_client.dataset(BQ_DATASET).table(BQ_TABLE_RECIBOS)
+        errors = bq_client.insert_rows_json(table_recibos_ref, [fila_recibo])
         if not errors:
             print("Fila insertada correctamente en la tabla de recibos.")
         else:
             print(f"Errores al insertar en tabla de recibos: {errors}")
 
-    # ... (Lógica para line_items) ...
+    if filas_line_items:
+        table_lineitems_ref = bq_client.dataset(BQ_DATASET).table(BQ_TABLE_LINE_ITEMS)
+        errors = bq_client.insert_rows_json(table_lineitems_ref, filas_line_items)
+        if not errors:
+            print(f"{len(filas_line_items)} filas insertadas correctamente en la tabla de line items.")
+        else:
+            print(f"Errores al insertar en tabla de line items: {errors}")
             
     return "Procesado con éxito", 200
 
