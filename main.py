@@ -15,7 +15,11 @@ BQ_TABLE_LINE_ITEMS = "line_items_Tickets"
 # -------------------------------------------------
 
 app = Flask(__name__)
-docai_client = documentai.DocumentProcessorServiceClient()
+
+# Le especificamos al cliente que debe conectarse al 'endpoint' (servidor) europeo
+client_options = {"api_endpoint": "eu-documentai.googleapis.com"}
+
+docai_client = documentai.DocumentProcessorServiceClient(client_options=client_options)
 bq_client = bigquery.Client()
 
 @app.route("/", methods=["POST"])
