@@ -1,3 +1,5 @@
 google-cloud-documentai
 google-cloud-bigquery
 google-cloud-storage
+Flask==3.0.0
+gunicorn==21.2.0
