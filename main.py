@@ -8,7 +8,7 @@ from google.cloud import storage
 # --- CONFIGURACIÓN: ASEGÚRATE DE QUE ESTOS DATOS SON CORRECTOS ---
 PROJECT_ID = "bold-rampart-464317-q7"    # Tu Project ID
 LOCATION = "eu"                         # Región de tu procesador
-PROCESSOR_ID = "tu-processor-id"          # El ID de tu procesador de Document AI
+PROCESSOR_ID = "285b1d87177fbb37"          # El ID de tu procesador de Document AI
 BQ_DATASET = "analisis_tickets"         # O el nombre que le hayas dado
 BQ_TABLE_RECIBOS = "recibos_restaurantes"   # O el nombre que le hayas dado
 BQ_TABLE_LINE_ITEMS = "line_items_recibos"    # O el nombre que le hayas dado
